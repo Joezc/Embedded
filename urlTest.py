@@ -1,3 +1,6 @@
+'''
+    download the map file from the server, decode to json and write to file.
+'''
 from urllib.request import urlopen
 import json
 
@@ -9,14 +12,16 @@ url = "http://ShowMyWay.comp.nus.edu.sg/getMapInfo.php?Building="+buildingname+"
 with urlopen(url) as response:
     html = response.read().decode("utf-8")
 
-#print(html)
-
 map1 = json.loads(html)
 
-print('the node number is :')
-print(len(map1['map']))
+print('the node number is : %d' % len(map1['map']))
+
 filename = input('input the file name:')
 
-f = open(filename, 'w')
-f.write(html)
-f.close()
+try:
+    f = open(filename, 'w')
+    f.write(html)
+    f.close()
+except:
+    print('write to file fails')
+    pass
