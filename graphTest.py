@@ -151,4 +151,10 @@ if __name__ == "__main__":
 
         IOwithSpeak.outputWithVoice("the next position should be "+str(sh_route[current]))
 
+        nowDis  = math.sqrt(float( (g.vertexList[sh_route[current]-1].x-int(current_X) )**2 ) +float( (g.vertexList[sh_route[current]-1].y-int(current_Y) )**2) )
+        nowDis = int(nowDis)
+        
+        IOwithSpeak.outputWithVoice("the next position should be "+str(sh_route[current]))
+        IOwithSpeak.outputWithVoice("the distance "+str(nowDis))
+
         print(str(g.dijkstra(int(begin),int(end))))
