@@ -2,6 +2,7 @@ from vertexTest import Vertex
 import urlTest
 import json
 import math
+import sys
 import IOwithSpeak
 MAXN = 100000000
 
@@ -100,44 +101,53 @@ if __name__ == "__main__":
 
     print("")
     IOwithSpeak.outputWithVoice("Be sure the following vertexs are under %d" % g.nodeNum)
-    begin = IOwithSpeak.inputWithVoice("pls input the starting vertex:")
-    end = IOwithSpeak.inputWithVoice("pls input an ending vertex:")
+    begin = IOwithSpeak.inputWithVoice("please input the starting vertex:")
+    end = IOwithSpeak.inputWithVoice("please input an ending vertex:")
     sh_route=g.dijkstra(int(begin), int(end))['route']
     print(str(sh_route))
-    current=0;
+
+    current=0
     while(True):
         current_X = int(IOwithSpeak.inputWithVoice("current X: "))
         current_Y = int(IOwithSpeak.inputWithVoice("current Y: "))
         current_Angel=int(IOwithSpeak.inputWithVoice("current Angel: "))
 
-        if g.vertexList[sh_route[current]-1].x-int(current_X)<=5 and g.vertexList[sh_route[current]-1].y-int(current_Y)<=5:
+        if abs(g.vertexList[sh_route[current]-1].x-int(current_X))<=25 and abs(g.vertexList[sh_route[current]-1].y-int(current_Y))<=25:
             begin=sh_route[current]
+            if (int(begin) == int(end)):
+                IOwithSpeak.outputWithVoice("get the destination")
+                sys.exit()
             current=current+1
+
         ax = -(current_X - g.vertexList[sh_route[current]-1].x)
         ay = -(current_Y - g.vertexList[sh_route[current]-1].y)
         ang_cal = int(math.atan2(ax, ay) * 180 / 3.14159)
-
-        # ang_diff=-(360-north-current_Angel)
-        #
-        # if (ang_diff>180):
-        #     ang_diff=ang_diff-360
-        # if (ang_cal-ang_diff>5 and ang_cal-ang_diff<=180) or (ang_cal-ang_diff>=-355 and ang_cal-ang_diff<-180):
-        #     print("turn right "+str((ang_cal-ang_diff)%180))
-        # else:
-        #     if (ang_cal-ang_diff<-5 and ang_cal-ang_diff>=-180) or (ang_cal-ang_diff>180 and ang_cal-ang_diff<=355):
-        #         print("turn left "+str((ang_cal-ang_diff)%180))
-        #     else:
-        #         print("keep straight forward")
+        # print('ang_cal1= %d' % ang_cal)
         ang_cal = (360-north+ang_cal) % 360
         ang_diff = ang_cal - current_Angel
 
-        if (ang_diff>5 and ang_diff<=180) or (ang_diff>=-355 and ang_diff<-180):
-            IOwithSpeak.outputWithVoice("turn right "+str(ang_diff%180))
-        else:
-            if (ang_diff<-5 and ang_diff>=-180) or (ang_diff>180 and ang_diff<=355):
-                IOwithSpeak.outputWithVoice("turn left "+str(ang_diff%180))
-            else:
-                IOwithSpeak.outputWithVoice("keep straight forward")
+        # print('ang_cal= %d' % ang_cal)
+        # print('ang_diff= %d' % ang_diff)
+
+        ang_precison = 5
+        if (ang_diff >= -360 and ang_diff <= -360 + ang_precison):
+            IOwithSpeak.outputWithVoice("keep straight forward")
+        elif (ang_diff > -360 + ang_precison and ang_diff <= -180 - ang_precison):
+            IOwithSpeak.outputWithVoice("turn right "+str(ang_diff+360))
+        elif (ang_diff > -180 - ang_precison and ang_diff <= -180 + ang_precison):
+            IOwithSpeak.outputWithVoice("turn about")
+        elif (ang_diff > -180 + ang_precison and ang_diff <= -ang_precison):
+            IOwithSpeak.outputWithVoice("turn left "+str(-ang_diff))
+        elif (ang_cal > -ang_precison and ang_diff <= ang_precison):
+            IOwithSpeak.outputWithVoice("keep straight forward")
+        elif (ang_diff > ang_precison and ang_diff <= 180 - ang_precison):
+            IOwithSpeak.outputWithVoice("turn right "+str(ang_diff))
+        elif (ang_diff > 180 -ang_precison and ang_diff <= 180 + ang_precison):
+            IOwithSpeak.outputWithVoice("turn about")
+        elif (ang_diff > 180 + ang_precison and ang_diff < 360 - ang_precison):
+            IOwithSpeak.outputWithVoice("turn left "+str(360-ang_diff))
+        elif (ang_diff >= 360 - ang_precison and ang_diff <= 360):
+            IOwithSpeak.outputWithVoice("keep straight forward")
 
         IOwithSpeak.outputWithVoice("the next position should be "+str(sh_route[current]))
 
