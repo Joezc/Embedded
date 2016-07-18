@@ -85,6 +85,8 @@ if __name__ == "__main__":
             break
     map1 = json.loads(jsonStr)
 
+    print("number of nodes is %d, the name of the first node is %s" % (len(map1['map']), map1['map'][0]['nodeName']))
+
     g = Graph()
     north=int(map1['info']['northAt'])
     for node in map1['map']:
@@ -95,7 +97,11 @@ if __name__ == "__main__":
     for node in map1['map']:
         v = Vertex(node['nodeName'], int(node['x']), int(node['y']), int(node['nodeId']))
         string1 = node["linkTo"]
-        list1 = string1.split(', ')
+        list1 = string1.split(',')
+        list2 = []
+        for celement in list1:
+            list2.append(celement.strip())
+
         for linkedNode in list1:
             g.addEdge(int(node['nodeId']), int(linkedNode))
 
@@ -113,8 +119,8 @@ if __name__ == "__main__":
         current_Angel=int(IOwithSpeak.inputWithVoice("current Angel: "))
 
         if abs(g.vertexList[sh_route[current]-1].x-int(current_X))<=25 and abs(g.vertexList[sh_route[current]-1].y-int(current_Y))<=25:
-            begin=sh_route[current]
-            if (int(begin) == int(end)):
+            # begin=sh_route[current]
+            if (int(sh_route[current]) == int(end)):
                 IOwithSpeak.outputWithVoice("get the destination")
                 sys.exit()
             current=current+1
@@ -149,12 +155,10 @@ if __name__ == "__main__":
         elif (ang_diff >= 360 - ang_precison and ang_diff <= 360):
             IOwithSpeak.outputWithVoice("keep straight forward")
 
-        IOwithSpeak.outputWithVoice("the next position should be "+str(sh_route[current]))
-
         nowDis  = math.sqrt(float( (g.vertexList[sh_route[current]-1].x-int(current_X) )**2 ) +float( (g.vertexList[sh_route[current]-1].y-int(current_Y) )**2) )
         nowDis = int(nowDis)
-        
-        IOwithSpeak.outputWithVoice("the next position should be "+str(sh_route[current]))
-        IOwithSpeak.outputWithVoice("the distance "+str(nowDis))
 
-        print(str(g.dijkstra(int(begin),int(end))))
+        IOwithSpeak.outputWithVoice("the next position should be "+str(sh_route[current]))
+        IOwithSpeak.outputWithVoice("the distance is "+str(nowDis))
+
+        # print(str(g.dijkstra(int(begin),int(end))))
