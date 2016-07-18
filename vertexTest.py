@@ -11,7 +11,6 @@ class Vertex:
 
 
     def __str__(self):
-
         res = self.name + "(" + str(self.x) + "," + str(self.y) + ")"
         return res
 
