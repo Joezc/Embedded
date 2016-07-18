@@ -124,7 +124,7 @@ if __name__ == "__main__":
         #         print("turn left "+str((ang_cal-ang_diff)%180))
         #     else:
         #         print("keep straight forward")
-        ang_cal = (360-north+ang_cal) % 360 # 下一个点 north向左偏的角度
+        ang_cal = (360-north+ang_cal) % 360
         ang_diff = ang_cal - current_Angel
 
         if (ang_diff>5 and ang_diff<=180) or (ang_diff>=-355 and ang_diff<-180):
@@ -138,5 +138,3 @@ if __name__ == "__main__":
         print("the next position should be "+str(sh_route[current]))
 
         print(str(dijkstra(g.edgeMatrix,n,int(begin),int(end))))
-
-#如果两点间没有连线,怎么走

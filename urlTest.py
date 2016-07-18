@@ -3,25 +3,41 @@
 '''
 from urllib.request import urlopen
 import json
+import IOwithSpeak
+import os
 
-buildingname = input('input the building name:')
-levelno = input('input the level:')
+def loadMap():
+    buildingname = IOwithSpeak.inputWithVoice('Please input the building ID:')
+    levelno = IOwithSpeak.inputWithVoice('Please input the level:')
 
-url = "http://ShowMyWay.comp.nus.edu.sg/getMapInfo.php?Building="+buildingname+"&Level="+levelno
+    filename = buildingname+'_'+levelno
+    path = r'/home/lzc/Workspace/Git/embedded/map/'+filename
+    if os.path.isfile(path):
+        pass
+    else:
+        try:
+            url = "http://ShowMyWay.comp.nus.edu.sg/getMapInfo.php?Building="+buildingname+"&Level="+levelno
 
-with urlopen(url) as response:
-    html = response.read().decode("utf-8")
+            try:
+                with urlopen(url) as response:
+                    html = response.read().decode("utf-8")
+            except:
+                IOwithSpeak.outputWithVoice('Something wrong with nerwork')
+                return(-1)
 
-map1 = json.loads(html)
+            map1 = json.loads(html)
 
-print('the node number is : %d' % len(map1['map']))
+            IOwithSpeak.outputWithVoice('the node number is : %d' % len(map1['map']))
+            if len(map1['map'])==0:
+                IOwithSpeak.outputWithVoice('there is no such map')
+                return(-1)
 
-filename = input('input the file name:')
+            f = open('./map/'+filename, 'w')
+            f.write(html)
+            f.close()
+        except:
+            IOwithSpeak.outputWithVoice('Sorry, download map fails')
+            return(-1)
 
-try:
-    f = open(filename, 'w')
-    f.write(html)
-    f.close()
-except:
-    print('write to file fails')
-    pass
+    IOwithSpeak.outputWithVoice('load map file successful, now start navigation')
+    return(0)
