@@ -23,9 +23,10 @@ NewPing sonar[SONAR_NUM] = {     // Sensor object array.
 
 long leftWheel = 0;		// pules come from encodes
 long rightWheel = 0;
-float KP = 3, KI = 0.0005, KD = 0;
-byte receive[10], sendbytes[10];
+float KP = 5, KI = 0.001, KD = 0;
+byte receive[4], sendbytes[10], receive1[6];
 int currentPoint_X, currentPoint_Y, nextPoint_X, nextPoint_Y;
+int lastPoint_X = -1, lastPoint_Y = -1;
 int northAt;
 
 
@@ -74,16 +75,20 @@ void setup()
     }
   }
 
+  initialVetex();
+}
+
+void initialVetex() {
   bool readinit = false;
   while (!readinit)
   {
     if (Serial3.available())
     {
       Serial.println("Connection is done!");
-      Serial3.readBytes(receive, 6);
-      currentPoint_X = receive[0] * 256 + receive[1];
-      currentPoint_Y = receive[2] * 256 + receive[3];
-      northAt = receive[4] * 256 + receive[5];
+      Serial3.readBytes(receive1, 6);
+      currentPoint_X = receive1[0] * 256 + receive1[1];
+      currentPoint_Y = receive1[2] * 256 + receive1[3];
+      northAt = receive1[4] * 256 + receive1[5];
       readinit = true;//初始化数据接受完成
       Serial.print("initial x=");
       Serial.print(currentPoint_X);
@@ -99,14 +104,21 @@ void setup()
     }
   }
 }
-
+int isReceive;
 
 void loop()
 {
-  int hea;
+  double hea;
   double dis;
   compass.read();
   int heading = compass.heading();
+
+  Serial.print("send to pi current x: ");
+  Serial.print(currentPoint_X);
+  Serial.print(" send to pi current y: ");
+  Serial.print(currentPoint_Y);
+  Serial.println(", ");
+
   sendbytes[0] = byte(currentPoint_X / 256);
   sendbytes[1] = byte(currentPoint_X % 256);
   sendbytes[2] = byte(currentPoint_Y / 256);
@@ -115,57 +127,186 @@ void loop()
   sendbytes[5] = byte(heading % 256);
   Serial3.write(sendbytes , 6);
 
-  int isReceive = 0;
+  int isMapSwitch = 0;
+  isReceive = 0;
   while (isReceive == 0) {
     if (Serial3.available()) {
-      Serial3.readBytes(receive, 4);
-      nextPoint_X = receive[0] * 256 + receive[1];
-      nextPoint_Y = receive[2] * 256 + receive[3];
+      Serial3.readBytes(receive, 5);
+      isMapSwitch = receive[0];
+      nextPoint_X = receive[1] * 256 + receive[2];
+      nextPoint_Y = receive[3] * 256 + receive[4];
 
-      Serial.print("current x,y and next x,y:");
-      Serial.print(currentPoint_X);
-      Serial.print(" ");
-      Serial.print(currentPoint_Y);
-      Serial.print(", ");
-      Serial.print(nextPoint_X);
-      Serial.print(" ");
-      Serial.println(nextPoint_Y);
-      Stop(2);
-      
-      hea = atan2(nextPoint_X - currentPoint_X, nextPoint_Y - currentPoint_Y) * 180 / PI;
-      if (hea < 0) hea += 360; // assigned_heading: [0, 360)
+      if (isMapSwitch == 1) {
+        initialVetex();
+      } else {
 
-      if (nextPoint_X == currentPoint_X) dis = abs(nextPoint_Y - currentPoint_Y);
-      else dis = abs(nextPoint_X - currentPoint_X);
-//      dis = sqrt((nextPoint_X - currentPoint_X) * (nextPoint_X - currentPoint_X) + (nextPoint_Y - currentPoint_Y) * (nextPoint_Y - currentPoint_Y));
+        Serial.print("last x,y, current x,y and next x,y:");
+        Serial.print(lastPoint_X);
+        Serial.print(" ");
+        Serial.print(lastPoint_Y);
+        Serial.print(", ");
+        Serial.print(currentPoint_X);
+        Serial.print(" ");
+        Serial.print(currentPoint_Y);
+        Serial.print(", ");
+        Serial.print(nextPoint_X);
+        Serial.print(" ");
+        Serial.println(nextPoint_Y);
+        //Stop(2);
+        if ((currentPoint_X == nextPoint_X) && (nextPoint_Y == currentPoint_Y)) break;
 
-      Serial.print("turn around at angle");
-      Serial.println(hea);
-      turnAround(hea);
-      goStraight1(dis);
-      Stop(2);
-      
+        hea = atan2(nextPoint_X - currentPoint_X, nextPoint_Y - currentPoint_Y) * 180 / PI;
+        if (hea < 0) hea += 360; // assigned_heading: [0, 360)
+
+        //if (nextPoint_X == currentPoint_X) dis = abs(nextPoint_Y - currentPoint_Y);
+        //else dis = abs(nextPoint_X - currentPoint_X);
+        dis = sqrt(sq(float(nextPoint_X - currentPoint_X)) + sq(float(nextPoint_Y - currentPoint_Y)));
+
+        Serial.print("turn around at angle:　");
+        Serial.println(hea);
+        //      turnAround1();
+        turnAround1();
+        goStraight(dis);
+        Stop(2);
+        lastPoint_X = currentPoint_X;
+        lastPoint_Y = currentPoint_Y;
+        currentPoint_X = nextPoint_X;
+        currentPoint_Y = nextPoint_Y;
+      }
       isReceive = 1;
     }
   }
 }
 
-void turnAround(int assigned_heading) {
-  //  assigned_heading += northAt;
-  //  if (assigned_heading > 360) assigned_heading -= 360;
+//void turnAround(int assigned_heading) {
+//  //  assigned_heading += northAt;
+//  //  if (assigned_heading > 360) assigned_heading -= 360;
+//
+//  compass.read();
+//  float heading1 = compass.heading() + northAt;
+//  if (heading1 > 360) heading1 -= 360;
+//
+//  byte Dir;
+//  float turnangle = 0;
+//
+//  while (abs(assigned_heading - heading1) > 3) {
+//    if (heading1 < 180 && heading1 >= 0)
+//    {
+//      if (assigned_heading - heading1 > 0 && assigned_heading - heading1 < 180)
+//      {
+//        Dir = 0;//左转
+//      } else
+//      {
+//        Dir = 1;//右转
+//      }
+//    }
+//    else
+//    {
+//      if (assigned_heading < 360 && assigned_heading > 180)
+//      {
+//        if (assigned_heading - heading1 > 0)
+//          Dir = 1;
+//        else
+//          Dir = 0;//左转
+//      }
+//      else if (assigned_heading <= 180 && assigned_heading > 0)
+//      {
+//        if (heading1 - assigned_heading < 180)
+//        {
+//          Dir = 0;//左转
+//        }
+//        else
+//          Dir = 1;
+//      }
+//    }
+//    if(abs(assigned_heading - heading1)>180)
+//    {
+//      turnangle = 360 - abs(assigned_heading - heading1);
+//    }
+//    else
+//    {
+//      turnangle = abs(assigned_heading - heading1);
+//    }
+//    Serial.print("AH:");
+//    Serial.print(assigned_heading);
+//    Serial.print(" H:");
+//    Serial.print(heading1);
+//    Serial.print("  Dir:");
+//    Serial.println(Dir);
+//    //    digitalWrite(4, Dir);
+//    //    digitalWrite(7, !Dir);
+//    //analogWrite(MOTORL_PIN, constrain(MIN_TURN_W+3*abs(assigned_heading - heading1), 0, 255));
+//    //analogWrite(MOTORR_PIN, constrain(MIN_TURN_W+3*abs(assigned_heading - heading1), 0, 255));
+//    digitalWrite(4, 1);
+//    digitalWrite(7, 1);
+//    if (Dir)
+//    {
+//      analogWrite(MOTORL_PIN, constrain(MIN_TURN_W + 2 * turnangle, 0, 255));
+//      analogWrite(MOTORR_PIN, 0);
+//    }
+//    else
+//    {
+//      analogWrite(MOTORR_PIN, constrain(MIN_TURN_W + 2 * turnangle, 0, 255));
+//      analogWrite(MOTORL_PIN, 0);
+//    }
+//
+//
+//    compass.read();
+//    heading1 = compass.heading() + northAt;
+//    if (heading1 > 360) heading1 -= 360;
+//
+//  }
+//  Serial.print("turn around success! now heading:");
+//  Serial.println(heading1);
+//}
 
-  compass.read();
-  float heading1 = compass.heading() + northAt;
-  if (heading1 > 360) heading1 -= 360;
+void turnAround1() {
+  Serial.println("start turning around");
+  double hea1, hea2;
+  double assigned_heading, heading1;
+  if (lastPoint_X == -1) {
+    hea1 = 0; hea2 = 0;
+    assigned_heading = atan2(nextPoint_X - currentPoint_X, nextPoint_Y - currentPoint_Y) * 180 / PI;
+    if (assigned_heading < 0) assigned_heading += 360; // assigned_heading: [0, 360)
+
+    compass.read();
+    heading1 = compass.heading() + northAt;
+    if (heading1 > 360) heading1 -= 360;
+  }
+  else {
+    hea1 = atan2(currentPoint_X - lastPoint_X, currentPoint_Y - lastPoint_Y) * 180 / PI;
+    if (hea1 < 0) hea1 += 360; // assigned_heading: [0, 360)
+    hea2 = atan2(nextPoint_X - currentPoint_X, nextPoint_Y - currentPoint_Y) * 180 / PI;
+    if (hea2 < 0) hea2 += 360; // assigned_heading: [0, 360)
+
+
+    compass.read();
+    heading1 = compass.heading() + northAt;
+    if (heading1 > 360) heading1 -= 360;
+    assigned_heading = heading1 + hea2 - hea1;
+    if (assigned_heading > 360) assigned_heading -= 360;
+    else if (assigned_heading < 0) assigned_heading += 360;
+
+  }
+
 
   byte Dir;
+  //
+  Serial.print("hea1:");
+  Serial.print(hea1);
+  Serial.print("hea2:");
+  Serial.print(hea2);
+  Serial.print("AH:");
+  Serial.print(assigned_heading);
+  Serial.print(" H:");
+  Serial.print(heading1);
 
   while (abs(assigned_heading - heading1) > 3) {
     if (assigned_heading - heading1 > 0)
     {
-      Dir = HIGH;
+      Dir = 1;
     } else {
-      Dir = LOW;
+      Dir = 0;
     }
     Serial.print("AH:");
     Serial.print(assigned_heading);
@@ -173,23 +314,18 @@ void turnAround(int assigned_heading) {
     Serial.print(heading1);
     Serial.print("  Dir:");
     Serial.println(Dir);
-    //    digitalWrite(4, Dir);
-    //    digitalWrite(7, !Dir);
-    //analogWrite(MOTORL_PIN, constrain(MIN_TURN_W+3*abs(assigned_heading - heading1), 0, 255));
-    //analogWrite(MOTORR_PIN, constrain(MIN_TURN_W+3*abs(assigned_heading - heading1), 0, 255));
     digitalWrite(4, 1);
     digitalWrite(7, 1);
     if (Dir)
     {
-      analogWrite(MOTORL_PIN, constrain(MIN_TURN_W + 3 * abs(assigned_heading - heading1), 0, 255));
+      analogWrite(MOTORL_PIN, constrain(MIN_TURN_W + 2 * abs(assigned_heading - heading1), 0, 255));
       analogWrite(MOTORR_PIN, 0);
     }
     else
     {
-      analogWrite(MOTORR_PIN, constrain(MIN_TURN_W + 3 * abs(assigned_heading - heading1), 0, 255));
+      analogWrite(MOTORR_PIN, constrain(MIN_TURN_W + 2 * abs(assigned_heading - heading1), 0, 255));
       analogWrite(MOTORL_PIN, 0);
     }
-
 
     compass.read();
     heading1 = compass.heading() + northAt;
@@ -200,44 +336,112 @@ void turnAround(int assigned_heading) {
   Serial.println(heading1);
 }
 
+//void turnAround2() {
+//  Serial.println("start turning around");
+//  double hea1, hea2;
+//  double assigned_heading, heading1;
+//  if (lastPoint_X == -1) {
+//    hea1 = 0; hea2 = 0;
+//    assigned_heading = atan2(nextPoint_X - currentPoint_X, nextPoint_Y - currentPoint_Y) * 180 / PI;
+//    if (assigned_heading < 0) assigned_heading += 360; // assigned_heading: [0, 360)
+//
+//  }
+//  else {
+//    hea1 = atan2(currentPoint_X - lastPoint_X, currentPoint_Y - lastPoint_Y) * 180 / PI;
+//    if (hea1 < 0) hea1 += 360; // assigned_heading: [0, 360)
+//    hea2 = atan2(nextPoint_X - currentPoint_X, nextPoint_Y - currentPoint_Y) * 180 / PI;
+//    if (hea2 < 0) hea2 += 360; // assigned_heading: [0, 360)
+//
+//    compass.read();
+//    heading1 = compass.heading() + northAt;
+//    if (heading1 > 360) heading1 -= 360;
+//
+//    assigned_heading = heading1 + hea2 - hea1;
+//    if (assigned_heading > 360) assigned_heading -= 360;
+//    else if (assigned_heading < 0) assigned_heading += 360;
+//
+//  }
+//
+//  byte Dir;
+//  float turnangle = 0;
+//  //
+//  // Serial.print("hea1:");
+//  //    Serial.print(hea1);
+//  //    Serial.print("hea2:");
+//  //    Serial.print(hea2);
+//  //    Serial.print("AH:");
+//  //    Serial.print(assigned_heading);
+//  //    Serial.print(" H:");
+//  //    Serial.print(heading1);
+//
+//  while (abs(assigned_heading - heading1) > 3) {
+//    if (heading1 < 180 && heading1 >= 0)
+//    {
+//      if (assigned_heading - heading1 > 0 && assigned_heading - heading1 < 180)
+//      {
+//        Dir = 0;//左转
+//      } else
+//      {
+//        Dir = 1;//右转
+//      }
+//    }
+//    else
+//    {
+//      if (assigned_heading < 360 && assigned_heading > 180)
+//      {
+//        if (assigned_heading - heading1 > 0)
+//          Dir = 1;
+//        else
+//          Dir = 0;//左转
+//      }
+//      else if (assigned_heading <= 180 && assigned_heading > 0)
+//      {
+//        if (heading1 - assigned_heading < 180)
+//        {
+//          Dir = 0;//左转
+//        }
+//        else
+//          Dir = 1;
+//      }
+//    }
+//    if(abs(assigned_heading - heading1)>180)
+//    {
+//      turnangle = 360 - abs(assigned_heading - heading1);
+//    }
+//    else
+//    {
+//      turnangle = abs(assigned_heading - heading1);
+//    }
+//    Serial.print("AH:");
+//    Serial.print(assigned_heading);
+//    Serial.print(" H:");
+//    Serial.print(heading1);
+//    Serial.print("  Dir:");
+//    Serial.println(Dir);
+//    digitalWrite(4, 1);
+//    digitalWrite(7, 1);
+//    if (Dir)
+//    {
+//      analogWrite(MOTORL_PIN, constrain(MIN_TURN_W + 2 * turnangle, 0, 255));
+//      analogWrite(MOTORR_PIN, 0);
+//    }
+//    else
+//    {
+//      analogWrite(MOTORR_PIN, constrain(MIN_TURN_W + turnangle, 0, 255));
+//      analogWrite(MOTORL_PIN, 0);
+//    }
+//
+//    compass.read();
+//    heading1 = compass.heading() + northAt;
+//    if (heading1 > 360) heading1 -= 360;
+//
+//  }
+//  Serial.print("turn around success! now heading:");
+//  Serial.println(heading1);
+//}
+
 void goStraight(double distance) {
-  double sDis = 0;
-
-  digitalWrite(4, 1);
-  digitalWrite(7, 1);
-  int bspeedL = 0; // adjust l wheel speed
-  int bspeedR = 0;
-
-  analogWrite(MOTORL_PIN, constrain(BASIC_SPEED, 0, 255));
-  analogWrite(MOTORR_PIN, constrain(BASIC_SPEED, 0, 255));
-
-  rightWheel = 0;
-  leftWheel = 0;
-
-  while (true) {
-    sDis = (rightWheel + leftWheel) / 2 / 333 * 22.0 /190*250;
-    if (rightWheel - leftWheel > 4)
-    { bspeedR--;
-      analogWrite(MOTORL_PIN, constrain(BASIC_SPEED + bspeedR * 5, 0, 255));
-    } else if (rightWheel - leftWheel < -4)
-    { bspeedL--;
-      analogWrite(MOTORR_PIN, constrain(BASIC_SPEED + bspeedL * 5, 0, 255));
-    } else {
-      bspeedL = 0;
-      bspeedR = 0;
-    }
-    if (sDis >= distance) break;
-
-    Serial.print("distance");
-    Serial.print(distance);
-    Serial.print(" sDis:");
-    Serial.print(sDis);
-    Serial.print(" right-left chazhi:");
-    Serial.println(rightWheel - leftWheel);
-  }
-}
-
-void goStraight1(double distance) {
+  Serial.println("start go straight");
   double sDis = 0;
   rightWheel = 0;
   leftWheel = 0;
@@ -250,18 +454,18 @@ void goStraight1(double distance) {
   float PID_Output = 0;
   while (true)
   {
-    sDis = (rightWheel + leftWheel) / 2 / 8.9;
+    sDis = (rightWheel + leftWheel) / 2 / 9.11;
     int wheelErro = -leftWheel + rightWheel;
     e[2] = e[1];
     e[1] = e[0];
     e[0] = wheelErro; //Input;
     PID_Output = KP * (e[0] - e[1]) + KI * (e[0]) - KD * (e[0] - 2 * e[1] + e[2]) + PID_Output;
 
-    analogWrite(MOTORL_PIN, constrain(250 + int(PID_Output), 0, 255));
-    analogWrite(MOTORR_PIN, constrain(250 - int(PID_Output), 0, 255));
+    analogWrite(MOTORL_PIN, constrain(255 + int(PID_Output), 0, 255));
+    analogWrite(MOTORR_PIN, constrain(255 - int(PID_Output), 0, 255));
 
     if (sDis >= distance) break;
-    
+
     Serial.print("distance: ");
     Serial.print(distance);
     Serial.print(" sDis:");
@@ -272,8 +476,11 @@ void goStraight1(double distance) {
 }
 
 void Stop(int i) {
+  analogWrite(MOTORL_PIN, 0);
+  analogWrite(MOTORR_PIN, 0);
   delay(i * 1000);
 }
+
 void count1() {
   rightWheel++;
 }
