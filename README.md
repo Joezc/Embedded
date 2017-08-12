@@ -1,19 +1,10 @@
-# Embedded
+A automatic in-building path finding solution without GPS. Automatically driving toy car to the destination once input the map information and starting point and end point coordinate.
 
-新版本的ardunio1.ino
+Feather:
+- High accurency
+- Totally automatic
 
-整个寻路流程是：
-
-1. 到一个点后，给PI发坐标，PI指示下一个点坐标
-2. turnAround(assigned_heading) 转到应该的角度。PID控制。
-3. goStraight(distance) 往前走一定距离走到下一个点。目前有轮距差调整功能。
-4. 重复1
-
-what to do:
-
-1. 提高转弯精准度。目前转弯角度靠绝对角，改成相对角减小误差。或者改轮距？或者更好的方法。
-2. 一旦走偏，是否有方法让他修正回来。
-
-我的想法，避障策略，主要应用于走廊中：
-
-1. 当判断左边或右边有障碍，即走偏撞墙了。停下，往走廊中间走1m，这个过程中假定他坐标不变。然后转弯，继续。
+Plateform:
+A toy car carrying motor, acoustic distance sensor, one arduino and one raspberry pi.
+- arduino to control motor and recevice censor signal
+- Raspberry Pi to find path and control arduino
